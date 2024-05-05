@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pokémon Details</title>
+    <style>
+        /* CSS styles */
+        body, html {
+            height: 100%; /* Set the height of the body and html to 100% */
+            font-family: Arial, sans-serif; /* Set font family */
+            margin: 0;
+            padding: 0;
+            background-color: #161616; /* Dark background color */
+            color: #ffffff; /* Light text color */
+        }
+
+        #pokemonDetails {
+            max-width: 600px; /* Limit width of details container */
+            margin: 20px auto; /* Center the container */
+            padding: 20px;
+            background-color: #272727; /* Darker background color */
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
+            color: #ffffff; /* Light text color */
+            border-radius: 8px; /* Rounded corners */
+        }
+
+        h1, h2 {
+            text-align: center;
+            color: #ffcc00; /* Yellow heading color */
+        }
+
+        img {
+            display: block;
+            margin: 0 auto;
+            width: 150px; /* Manually set the width of the image */
+            height: auto; /* Maintain aspect ratio */
+            border-radius: 8px; /* Rounded corners for image */
+            box-shadow: 0 0 5px rgba(255, 255, 255, 0.1); /* Image shadow */
+        }
+
+        ul {
+            list-style-type: none;
+            padding: 0;
+            display: flex; /* Display items horizontally */
+            flex-wrap: wrap; /* Allow items to wrap to the next line */
+            justify-content: center; /* Center the items horizontally */
+        }
+
+        li {
+            margin: 5px; /* Margin between items */
+            padding: 5px 10px; /* Padding for each item */
+            background-color: #333; /* Dark background color for items */
+            border-radius: 5px; /* Rounded corners */
+        }
+
+        p {
+            margin-bottom: 10px; /* Spacing between paragraphs */
+        }
+
+        .back-button {
+            display: block;
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .back-button a {
+            color: #ffcc00;
+            text-decoration: none;
+            padding: 10px 20px;
+            border: 2px solid #ffcc00;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+        }
+
+        .back-button a:hover {
+            background-color: #ffcc00;
+            color: #161616;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="pokemonDetails"></div>
+
+    <div class="back-button">
+        <a href="index.html">Back</a>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const id = urlParams.get('id'); // Get the Pokémon ID from the URL
+    
+            if (!id) {
+                alert('No Pokémon ID provided.');
+                return;
+            }
+    
+            fetch(`https://pokeapi.co/api/v2/pokemon/${id}`)
+            .then(response => response.json())
+            .then(data => {
+                const detailsContainer = document.getElementById('pokemonDetails');
+    
+                // Fetch additional information
+                const speciesUrl = data.species.url;
+                const abilitiesUrls = data.abilities.map(ability => ability.ability.url);
+                const movesUrls = data.moves.map(move => move.move.url);
+                const speciesDetailsUrl = `https://pokeapi.co/api/v2/pokemon-species/${id}`;
+    
+                Promise.all([
+                    fetch(speciesUrl).then(response => response.json()),
+                    fetch(speciesDetailsUrl).then(response => response.json()),
+                    Promise.all(abilitiesUrls.map(url => fetch(url).then(response => response.json()))),
+                    Promise.all(movesUrls.map(url => fetch(url).then(response => response.json())))
+                ])
+                .then(([speciesData, speciesDetails, abilitiesData, movesData]) => {
+                    detailsContainer.innerHTML = `
+                        <h1>${data.name}</h1>
+                        <img src="${data.sprites.front_default}" alt="${data.name}">
+                        <ul>
+                            <li>Height: ${data.height / 10} m</li>
+                            <li>Weight: ${data.weight / 10} kg</li>
+                        </ul>
+                        <h2>Abilities</h2>
+                        <ul>
+                            ${abilitiesData.map(ability => `<li>${ability.name}</li>`).join('')}
+                        </ul>
+                        <h2>Types</h2>
+                        <ul>
+                            ${data.types.map(type => `<li>${type.type.name}</li>`).join('')}
+                        </ul>
+                        <h2>Species</h2>
+                        <ul>
+                            <li>Species: ${speciesData.name}</li>
+                            <li>${speciesData.genera.find(genus => genus.language.name === 'en').genus}</li>
+                        </ul>
+                        <h2>Base Experience</h2>
+                        <ul>
+                            <li>Base Experience: ${data.base_experience}</li>
+                        </ul>
+                        <h2>Moves</h2>
+                        <ul>
+                            ${movesData.map(move => `<li>${move.name}</li>`).join('')}
+                        </ul>
+                    `;
+                })
+                .catch(error => {
+                    console.error('Error fetching Pokémon details:', error);
+                    alert('Failed to load Pokémon details.');
+                });
+            })
+            .catch(error => {
+                console.error('Error fetching Pokémon details:', error);
+                alert('Failed to load Pokémon details.');
+            });
+        });
+    </script>
+</body>
+</html>

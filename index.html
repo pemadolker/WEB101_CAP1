@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pokédex</title>
     <style>
-        /* Add your CSS styles here */
-        /* Existing CSS styles */
+        /* CSS styles */
+        /* Add your existing CSS styles here */
         body {
             font-family: Arial, sans-serif;
             margin: 0;
@@ -105,8 +105,7 @@
             top: 5px; /* Adjust top position */
             left: 5px; /* Adjust left position */
             font-size: 16px; /* Adjust font size */
-            padding: 5px; /* Add padding to give space around the label */
-            background-color: 3161616; /* Semi-transparent background */
+            padding: 5px; /* Add padding to give space around the label *//* Semi-transparent background */
             color: #9A9A9A; /* Set text color */
             border-top-left-radius: 5px; /* Rounded corners for top left */
             border-bottom-right-radius: 5px; /* Rounded corners for bottom right */
@@ -135,6 +134,25 @@
             color: #9A9A9A; /* Set text color */
             border: 0.5px solid #585757; /* Set border color */
         }
+        .modal {
+            display: none; /* Hidden by default */
+            position: fixed; /* Stay in place */
+            z-index: 1; /* Sit on top */
+            left: 0;
+            top: 0;
+            width: 100%; /* Full width */
+            height: 100%; /* Full height */
+            overflow: auto; /* Enable scroll if needed */
+            background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto; /* 15% from the top and centered */
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%; /* Could be more or less, depending on screen size */
+        }
 
         button {
             padding: 18px 28px; /* Keep padding consistent with input */
@@ -148,26 +166,45 @@
         button:hover {
             background-color: #4a4d4a; /* Darken background color on hover */
         }
-
+        /* Define CSS for the Pokémon details */
+        #pokemonDetails {
+            display: none; /* Initially hide the Pokémon details */
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #fff;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
     </style>
 </head>
 <body>
     <div class="header">
+        <!-- Header content -->
         <img class="logo" src="https://pokedex-flurn.netlify.app/Pokeball.svg" alt="Pokéball">
         <h1 class="title">Pokédex</h1>
     </div>
     <div class="search-container">
+        <!-- Search container content -->
         <input type="text" id="pokemonName" placeholder="Search">
         <button onclick="searchPokemon()">Search</button>
     </div>
     <div class="header-links">
+        <!-- Header links content -->
         <a href="#" id="homeLink">Home</a>
         <a href="#" id="bookmarkLink">Bookmark</a>
     </div>
-    <div id="pokedex" class="pokedex"></div>
+    <div id="pokedex" class="pokedex">
+        <!-- Pokémon cards will be appended here -->
+    </div>
+    
     <div id="loader" class="loader">Loading...</div>
 
+    <!-- Pokémon Details section -->
+    <div id="pokemonDetails"></div>
+
     <script>
+        // JavaScript code
+        // Add your existing JavaScript code here
         let offset = 0;
         const limit = 20;
     
@@ -183,15 +220,7 @@
                 }
             });
         
-            // Add event listener for Enter key press in the input field
-            document.getElementById("pokemonName").addEventListener("keydown", function(event) {
-                if (event.keyCode === 13) {
-                    event.preventDefault(); // Prevent default form submission
-                    searchPokemon(); // Trigger search function
-                }
-            });
-
-        // Add event listener to handle link clicks
+            // Add event listener to handle link clicks
             document.getElementById("homeLink").addEventListener("click", function(event) {
                 event.preventDefault();
                 setActivePage("home");
@@ -236,7 +265,7 @@
                         // If no data is fetched, break the loop
                         break;
                     }
-                    const pokemonDiv = createPokemonCard(pokemonData);
+                    const pokemonDiv = createPokemonCard(pokemonData, lastFetchedId + 1); // Pass the ID
                     pokedexContainer.appendChild(pokemonDiv);
                     fetchedPokemonCount++;
                     lastFetchedId++; // Update the last fetched ID
@@ -254,18 +283,45 @@
             }
             return await response.json();
         }
-        
-        function createPokemonCard(pokemonData) {
-            // Create a new instance of the PokemonCard custom element
-            const pokemonCard = document.createElement("pokemon-card");
-            pokemonCard.setAttribute("name", pokemonData.name);
-            pokemonCard.setAttribute("height", (pokemonData.height / 10) + " m");
-            pokemonCard.setAttribute("weight", (pokemonData.weight / 10) + " kg");
-            pokemonCard.setAttribute("image", pokemonData.sprites.front_default);
-            pokemonCard.setAttribute("id", pokemonData.id);
 
-            return pokemonCard;
-        }
+
+        function createPokemonCard(pokemonData, id) {
+        const pokemonCard = document.createElement("pokemon-card");
+        pokemonCard.setAttribute("name", pokemonData.name);
+        pokemonCard.setAttribute("height", (pokemonData.height / 10) + " m");
+        pokemonCard.setAttribute("weight", (pokemonData.weight / 10) + " kg");
+        pokemonCard.setAttribute("image", pokemonData.sprites.front_default);
+        pokemonCard.setAttribute("id", id);
+
+        // Create a heart button
+        const heartButton = document.createElement("button");
+        heartButton.classList.add("favorite-btn");
+        heartButton.innerHTML = "❤️"; // Heart symbol
+
+        // Add event listener to toggle favorite status
+        heartButton.addEventListener("click", function(event) {
+            event.stopPropagation(); // Prevent event from bubbling up to parent
+            toggleFavorite(id);
+        });
+
+        // Append heart button to the Pokémon card
+        pokemonCard.appendChild(heartButton);
+
+        // Set up the rest of the Pokémon card content
+        const name = pokemonData.name;
+        const height = (pokemonData.height / 10) + " m";
+        const weight = (pokemonData.weight / 10) + " kg";
+
+        pokemonCard.innerHTML += `
+            <span class='index-label'>#${id}</span>
+            <img src="${pokemonData.sprites.front_default}" alt="${name}">
+            <h2><span class='key'>Name:</span> ${name}</h2>
+            <p><span class='key'>Height:</span> ${height}</p>
+            <p><span class='key'>Weight:</span> ${weight}</p>
+        `;
+
+        return pokemonCard;
+    }
 
         function handleScroll() {
             const { scrollTop, scrollHeight, clientHeight } = document.documentElement;
@@ -301,10 +357,54 @@
             const pokedexContainer = document.getElementById("pokedex");
             pokedexContainer.innerHTML = "";
     
-            const pokemonCard = createPokemonCard(pokemonData);
+            const pokemonCard = createPokemonCard(pokemonData, pokemonData.id); // Pass the Pokémon ID
             pokedexContainer.appendChild(pokemonCard);
         }
-    
+        function openPokemonModal(id) {
+            const url = `pokemon-details.html?id=${id}`; // Construct the URL with the Pokémon ID
+            window.open(url, '_blank'); // Open the new page in a new tab/window
+        }
+        let favorites = [];
+
+        function toggleFavorite(id) {
+            const index = favorites.indexOf(id);
+            if (index === -1) {
+                // Add to favorites
+                favorites.push(id);
+                updateFavoriteButton(id, true);
+            } else {
+                // Remove from favorites
+                favorites.splice(index, 1);
+                updateFavoriteButton(id, false);
+            }
+        }
+
+        function updateFavoriteButton(id, isFavorite) {
+            const button = document.querySelector(`.pokemon[id='${id}'] .favorite-btn`);
+            if (isFavorite) {
+                button.textContent = "Remove from Favorites";
+            } else {
+                button.textContent = "Add to Favorites";
+            }
+        }
+
+        // Optionally, you can store favorites in local storage for persistence
+        function saveFavorites() {
+            localStorage.setItem("favorites", JSON.stringify(favorites));
+        }
+
+        function loadFavorites() {
+            const storedFavorites = localStorage.getItem("favorites");
+            if (storedFavorites) {
+                favorites = JSON.parse(storedFavorites);
+                // Update favorite buttons for loaded favorites
+                favorites.forEach(id => updateFavoriteButton(id, true));
+            }
+        }
+
+        // Call loadFavorites when the page loads to load any previously saved favorites
+        document.addEventListener("DOMContentLoaded", loadFavorites);
+
     </script>
 
     <!-- Define the custom element for the Pokémon card -->
@@ -318,7 +418,7 @@
                 const id = this.getAttribute("id");
 
                 this.innerHTML = `
-                    <div class="pokemon">
+                    <div class="pokemon" onclick="openPokemonModal(${id})">
                         <span class='index-label'>#${id}</span>
                         <img src="${image}" alt="${name}">
                         <h2><span class='key'>Name:</span> ${name}</h2>
